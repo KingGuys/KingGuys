@@ -1,6 +1,5 @@
 import os
 import subprocess
-import re
 from datetime import datetime
 
 # 환경 설정
