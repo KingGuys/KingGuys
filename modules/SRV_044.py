@@ -109,7 +109,7 @@ def SRV_044(apache_check, httpd_conf):
         else:
             limit_request_field_size_result = "미설정"
 
-        # 결과 요약 (개선)
+        # 결과 요약
         log("  - 결과 요약:")
         log(f"    - LimitRequestBody: {limit_request_body_result}")
         log(f"    - LimitRequestLine: {limit_request_line_result}")

@@ -45,7 +45,7 @@ def SRV_042(apache_check=None, httpd_conf=None):
 
     vulnerable = False
     try:
-        # 1. httpd.conf 파일 전체에서 AllowOverride 설정 확인 (개선)
+        # 1. httpd.conf 파일 전체에서 AllowOverride 설정 확인
         allowoverride_settings = re.findall(
             r"^\s*AllowOverride\s+(.*?)$", httpd_conf_content, re.MULTILINE | re.IGNORECASE
         )
@@ -57,7 +57,7 @@ def SRV_042(apache_check=None, httpd_conf=None):
                 if setting.lower() != "none":
                     vulnerable = True
 
-            # 2. <Directory /> 블록 내 AllowOverride None 설정 확인 (개선)
+            # 2. <Directory /> 블록 내 AllowOverride None 설정 확인
             directory_root_block = re.search(
                 r"<\s*Directory\s+/>(.*?)</Directory>", httpd_conf_content, re.DOTALL | re.IGNORECASE
             )

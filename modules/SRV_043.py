@@ -66,7 +66,7 @@ def SRV_043(apache_check, httpd_conf):
             log("")
             return
         
-        # 3. <Directory> 블록에서 httpd_root 경로 찾기 (개선)
+        # 3. <Directory> 블록에서 httpd_root 경로 찾기
         directory_blocks = re.findall(
             r"<\s*Directory\s+(.*?)>(.*?)<\/Directory>", httpd_conf_content, re.DOTALL | re.IGNORECASE
         )
@@ -88,7 +88,7 @@ def SRV_043(apache_check, httpd_conf):
         unnecessary_files = ["manual", "docs", "samples", "examples", "cgi-bin"]  # 2. cgi-bin 디렉터리 추가
         found_files = []
 
-        # 불필요한 파일/디렉터리 확인 (개선)
+        # 불필요한 파일/디렉터리 확인
         for file in unnecessary_files:
             # 파일/디렉터리 존재 확인
             file_path = os.path.join(httpd_root, file)
