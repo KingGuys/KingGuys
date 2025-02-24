@@ -45,7 +45,7 @@ def SRV_001():
         else:
             log(f"2. SNMP v1/v2c 취약 커뮤니티 스트링 검사: {snmpd_conf_path} 파일 접근 불가")
 
-        # SNMP v3 설정 파일 확인 (개선 필요)
+        # SNMP v3 설정 파일 확인
         if os.path.exists(snmpd_conf_path) and os.access(snmpd_conf_path, os.R_OK):
             # createUser로 생성된 사용자 확인 (public, private)
             snmpdv3_conf = subprocess.getoutput(
