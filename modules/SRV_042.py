@@ -9,7 +9,7 @@ os.environ["LANG"] = "C"
 # 파일명 설정
 hostname = subprocess.getoutput("hostname")
 date = datetime.now().strftime("%Y-%m-%d")
-filename = f"SRV-001.log"
+filename = f"SRV-042.log"
 
 # 로그 작성 함수
 def log(message):
@@ -19,7 +19,7 @@ def log(message):
     print(message)
 
 # SRV-042: 웹 서비스 상위 디렉터리 접근 제한 설정 미흡
-def SRV_042(apache_check, httpd_conf):
+def SRV_042(apache_check=None, httpd_conf=None):
     log("[SRV-042] 웹 서비스 상위 디렉터리 접근 제한 설정 미흡")
     log("")
 
@@ -61,38 +61,46 @@ def SRV_042(apache_check, httpd_conf):
             directory_root_block = re.search(
                 r"<\s*Directory\s+/>(.*?)</Directory>", httpd_conf_content, re.DOTALL | re.IGNORECASE
             )
-            
+
             if directory_root_block:
                 directory_root_content = directory_root_block.group(1)
-                
+
                 # <Directory /> 블록 내 AllowOverride None 설정 확인
                 allowoverride_none_match = re.search(
                     r"^\s*AllowOverride\s+None", directory_root_content, re.MULTILINE | re.IGNORECASE
                 )
-                
+
                 if allowoverride_none_match:
-                  log("    - AllowOverride None 설정: 발견")
-                  vulnerable = False
+                    log("    - AllowOverride None 설정: 발견")
+                    vulnerable = False  # <Directory />에 None 설정이 있으면 안전
                 else:
-                  # <Directory /> 블록 내 AllowOverride 설정 확인
-                  allowoverride_match = re.search(
-                      r"^\s*AllowOverride\s+(.*)", directory_root_content, re.MULTILINE | re.IGNORECASE
-                  )
+                    # <Directory /> 블록 내 AllowOverride 설정 확인 (None이 아닌 경우)
+                    allowoverride_match = re.search(
+                        r"^\s*AllowOverride\s+(.*)", directory_root_content, re.MULTILINE | re.IGNORECASE
+                    )
 
-                  if allowoverride_match:
-                    log(f"    - AllowOverride 설정: {allowoverride_match.group(1).strip()} (취약)")
-                    vulnerable = True
-                  else:
-                    log("    - AllowOverride 설정: 미설정")
-                    vulnerable = True
+                    if allowoverride_match:
+                        if allowoverride_match.group(1).strip().lower() != "none":
+                            log(f"    - AllowOverride 설정: {allowoverride_match.group(1).strip()} (취약)")
+                            vulnerable = True
+                        else:
+                             log(f"    - AllowOverride 설정: {allowoverride_match.group(1).strip()} (양호)")
+                             vulnerable = False # AllowOverride None 이면 양호
+
+                    else:
+                        log("    - AllowOverride 설정: <Directory /> 블록 내 설정 미발견 (취약)")  #  설정 자체가 없으면 취약
+                        vulnerable = True
+
             else:
-              log("    - AllowOverride 설정: <Directory /> 블록 내 설정 확인 불가")
-              vulnerable = True
+                log("    - <Directory /> 블록 설정 미발견 (취약)")  # <Directory /> 블럭이 아예 없으면 취약
+                vulnerable = True
+        else: #httpd.conf 파일에서 AllowOverride 설정 자체가 없으면 취약
+            log("  - httpd.conf 파일에 AllowOverride 설정 없음 (취약)")
+            vulnerable = True
 
-        else:
-            log("  - AllowOverride 설정: 없음")
 
-        # 3. DocumentRoot 확인 (개선)
+
+        # 3. DocumentRoot 확인
         document_root_match = re.search(
             r"^\s*DocumentRoot\s+\"(.*?)\"", httpd_conf_content, re.MULTILINE | re.IGNORECASE
         )
@@ -100,27 +108,42 @@ def SRV_042(apache_check, httpd_conf):
             document_root = document_root_match.group(1)
             log(f"  - DocumentRoot: {document_root}")
 
-            # 4. DocumentRoot에 대한 AllowOverride 설정 확인 (개선)
+            # 4. DocumentRoot에 대한 AllowOverride 설정 확인
             directory_docroot_block = re.search(
                 rf"<\s*Directory\s+{re.escape(document_root)}>(.*?)<\/Directory>", httpd_conf_content, re.DOTALL | re.IGNORECASE
             )
             if directory_docroot_block:
-              directory_docroot_content = directory_docroot_block.group(1)
-              # <Directory DocumentRoot> 블록 내 AllowOverride None 설정 확인
-              allowoverride_none_match = re.search(
-                  r"^\s*AllowOverride\s+None", directory_docroot_content, re.MULTILINE | re.IGNORECASE
-              )
-              if allowoverride_none_match:
-                log(f"    - DocumentRoot 경로 AllowOverride None 설정: 발견")
-                vulnerable = False
-              else:
-                log(f"    - DocumentRoot 경로 AllowOverride None 설정: 미발견 (취약)")
-                vulnerable = True
+                directory_docroot_content = directory_docroot_block.group(1)
+                # <Directory DocumentRoot> 블록 내 AllowOverride None 설정 확인
+                allowoverride_none_match = re.search(
+                    r"^\s*AllowOverride\s+None", directory_docroot_content, re.MULTILINE | re.IGNORECASE
+                )
+                if allowoverride_none_match:
+                    log(f"    - DocumentRoot 경로 AllowOverride None 설정: 발견")
+                    vulnerable = False
+                else:
+                    # DocumentRoot에 대한 AllowOverride 설정이 None이 아닌 경우
+                    allowoverride_match_docroot = re.search(
+                        r"^\s*AllowOverride\s+(.*)", directory_docroot_content, re.MULTILINE | re.IGNORECASE
+                    )
+                    if allowoverride_match_docroot:
+                        if allowoverride_match_docroot.group(1).strip().lower() != 'none':
+                           log(f"    - DocumentRoot 경로 AllowOverride 설정: {allowoverride_match_docroot.group(1).strip()} (취약)")
+                           vulnerable = True
+                        else:
+                            log(f"    - DocumentRoot 경로 AllowOverride 설정: {allowoverride_match_docroot.group(1).strip()} (양호)")
+                            vulnerable = False
+
+                    else:
+                       log(f"    - DocumentRoot 경로 AllowOverride 설정 미발견 (취약)")
+                       vulnerable = True
+
             else:
                 log(f"  - {document_root} (DocumentRoot) 경로에 대한 <Directory> 설정이 없습니다. (취약)")
                 vulnerable = True
         else:
-            log("  - DocumentRoot 설정 확인 불가")
+            log("  - DocumentRoot 설정 확인 불가")  # DocumentRoot 설정이 없으면 취약 여부 판단 불가
+
 
         if vulnerable:
             log("결과: 취약 (상위 디렉터리 접근 제한 미흡)")

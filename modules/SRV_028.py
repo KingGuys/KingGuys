@@ -8,7 +8,7 @@ os.environ["LANG"] = "C"
 # 파일명 설정
 hostname = subprocess.getoutput("hostname")
 date = datetime.now().strftime("%Y-%m-%d")
-filename = f"SRV-001.log"
+filename = f"SRV-028.log"
 
 # 로그 작성 함수
 def log(message):
